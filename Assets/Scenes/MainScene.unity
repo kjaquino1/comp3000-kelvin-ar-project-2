@@ -327,7 +327,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &111466611
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1444,6 +1444,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4878787142445509934, guid: 48cb3fb68c91eb94999fd99957eb0cae, type: 3}
+      propertyPath: objectToPlace
+      value: 
+      objectReference: {fileID: 8804708597038770094, guid: 1852ecd3fa42c0342933f8c246c724a2, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -1571,7 +1575,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &382985766
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2205,7 +2209,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &567614124
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4576,7 +4580,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1055781090
 RectTransform:
   m_ObjectHideFlags: 0
@@ -5023,7 +5027,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1085136966
 RectTransform:
   m_ObjectHideFlags: 0
@@ -5940,7 +5944,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1318640538
 RectTransform:
   m_ObjectHideFlags: 0
@@ -7234,7 +7238,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1535141418
 RectTransform:
   m_ObjectHideFlags: 0
@@ -8862,7 +8866,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &2060957753
 RectTransform:
   m_ObjectHideFlags: 0
