@@ -38,6 +38,11 @@ public class ARMathShooterGame : MonoBehaviour
     public float enemyRadius = 1.2f;
     public float enemyHeight = 0.8f;
 
+    [Header("Shooting Effect")]
+    public float shootLineDuration = 0.08f;
+    public float enemyDropDuration = 0.45f;
+    public float enemyDropDistance = 1.2f;
+
     private enum GameState
     {
         TitleScreen,
@@ -231,11 +236,14 @@ public class ARMathShooterGame : MonoBehaviour
             SetupRobotQuestionText();
             CreateTimerRing();
 
-            if (instructionText != null)
-                instructionText.gameObject.SetActive(false);
-
             if (topNotchPanel != null)
-                topNotchPanel.SetActive(false);
+                topNotchPanel.SetActive(true);
+
+            if (instructionText != null)
+            {
+                instructionText.gameObject.SetActive(true);
+                instructionText.text = "Hit the correct answer";
+            }
 
             state = GameState.Playing;
             StartNextQuestion();
@@ -273,8 +281,17 @@ public class ARMathShooterGame : MonoBehaviour
         if (robotQuestionText != null)
             robotQuestionText.text = question;
 
+        if (topNotchPanel != null)
+            topNotchPanel.SetActive(true);
+
+        if (instructionText != null)
+        {
+            instructionText.gameObject.SetActive(true);
+            instructionText.text = "Hit the correct answer";
+        }
+
         if (feedbackText != null)
-            feedbackText.text = "Shoot the correct answer";
+            feedbackText.text = "";
 
         timer = questionTime;
 
@@ -505,13 +522,24 @@ public class ARMathShooterGame : MonoBehaviour
 
         Ray ray = arCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
 
+        Vector3 lineStart = arCamera.ViewportToWorldPoint(new Vector3(0.5f, 0.15f, 0.4f));
+        Vector3 lineEnd = arCamera.transform.position + arCamera.transform.forward * 8f;
+
         if (Physics.Raycast(ray, out RaycastHit hit, 100f))
         {
+            lineEnd = hit.point;
+
             EnemyData hitEnemy = GetHitEnemy(hit.collider.gameObject);
 
             if (hitEnemy != null)
+            {
+                StartCoroutine(ShootLineEffect(lineStart, hit.point));
                 ProcessEnemyHit(hitEnemy);
+                return;
+            }
         }
+
+        StartCoroutine(ShootLineEffect(lineStart, lineEnd));
     }
 
     private EnemyData GetHitEnemy(GameObject hitObject)
@@ -533,28 +561,30 @@ public class ARMathShooterGame : MonoBehaviour
         if (waitingForNextQuestion)
             return;
 
+        GameObject enemyObj = enemy.obj;
+
+        activeEnemies.Remove(enemy);
+
         if (enemy.isCorrect)
         {
             score++;
 
-            if (feedbackText != null)
-                feedbackText.text = "Correct!";
-
-            Destroy(enemy.obj);
-            activeEnemies.Remove(enemy);
+            if (instructionText != null)
+                instructionText.text = "Correct!";
 
             UpdateScoreText();
+
+            StartCoroutine(DropEnemyThenDestroy(enemyObj));
             StartCoroutine(NextQuestionAfterDelay(0.8f));
         }
         else
         {
             timer = Mathf.Max(0f, timer - 1f);
 
-            if (feedbackText != null)
-                feedbackText.text = "Wrong! -1 second";
+            if (instructionText != null)
+                instructionText.text = "Wrong!";
 
-            Destroy(enemy.obj);
-            activeEnemies.Remove(enemy);
+            StartCoroutine(DropEnemyThenDestroy(enemyObj));
         }
     }
 
@@ -575,8 +605,8 @@ public class ARMathShooterGame : MonoBehaviour
         {
             timer = 0f;
 
-            if (feedbackText != null)
-                feedbackText.text = "Time up!";
+            if (instructionText != null)
+                instructionText.text = "Time's up!";
 
             StartCoroutine(NextQuestionAfterDelay(0.8f));
         }
@@ -736,6 +766,68 @@ public class ARMathShooterGame : MonoBehaviour
     {
         if (scoreText != null)
             scoreText.text = "Score: " + score;
+    }
+    private IEnumerator ShootLineEffect(Vector3 start, Vector3 end)
+    {
+        GameObject lineObj = new GameObject("ShootLineEffect");
+
+        LineRenderer line = lineObj.AddComponent<LineRenderer>();
+        line.useWorldSpace = true;
+        line.positionCount = 2;
+        line.widthMultiplier = 0.08f;
+        line.material = new Material(Shader.Find("Sprites/Default"));
+        line.startColor = Color.yellow;
+        line.endColor = Color.red;
+
+        line.SetPosition(0, start);
+        line.SetPosition(1, end);
+
+        GameObject impactObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        impactObj.name = "ShootImpactEffect";
+        impactObj.transform.position = end;
+        impactObj.transform.localScale = Vector3.one * 0.12f;
+
+        Renderer impactRenderer = impactObj.GetComponent<Renderer>();
+
+        if (impactRenderer != null)
+        {
+            Material impactMaterial = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            impactMaterial.color = Color.yellow;
+            impactRenderer.material = impactMaterial;
+        }
+
+        yield return new WaitForSeconds(0.25f);
+
+        Destroy(lineObj);
+        Destroy(impactObj);
+    }
+
+    private IEnumerator DropEnemyThenDestroy(GameObject enemyObj)
+    {
+        if (enemyObj == null)
+            yield break;
+
+        Vector3 startPosition = enemyObj.transform.position;
+        Vector3 endPosition = startPosition + Vector3.down * enemyDropDistance;
+
+        float elapsed = 0f;
+
+        while (elapsed < enemyDropDuration)
+        {
+            if (enemyObj == null)
+                yield break;
+
+            elapsed += Time.deltaTime;
+            float t = elapsed / enemyDropDuration;
+
+            enemyObj.transform.position = Vector3.Lerp(startPosition, endPosition, t);
+            enemyObj.transform.Rotate(0f, 0f, 720f * Time.deltaTime);
+
+            yield return null;
+        }
+
+        if (enemyObj != null)
+            Destroy(enemyObj);
     }
 
     private void EndGame()
