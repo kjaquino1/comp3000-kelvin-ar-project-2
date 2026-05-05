@@ -31,6 +31,13 @@ public class ARMathShooterGame : MonoBehaviour
     public Button subtractionButton;
     public Button multiplicationButton;
     public Button divisionButton;
+    public Button backButton;
+
+    [Header("End Screen")]
+    public GameObject endPanel;
+    public TextMeshProUGUI finalScoreText;
+    public Button playAgainButton;
+    public Button mainMenuButton;
 
     [Header("Game Settings")]
     public int totalQuestions = 10;
@@ -134,11 +141,57 @@ public class ARMathShooterGame : MonoBehaviour
 
         if (divisionButton != null)
             divisionButton.onClick.AddListener(StartDivisionMode);
+
+        if (backButton != null)
+            backButton.onClick.AddListener(ReturnToMainMenu);
+
+        if (playAgainButton != null)
+            playAgainButton.onClick.AddListener(PlayAgain);
+
+        if (mainMenuButton != null)
+            mainMenuButton.onClick.AddListener(ReturnToMainMenu);
+
+        if (endPanel != null)
+            endPanel.SetActive(false);
     }
 
     private void StartAdditionMode()
     {
         selectedMode = OperationMode.Addition;
+        BeginScanning();
+    }
+
+    private void PlayAgain()
+    {
+        if (endPanel != null)
+            endPanel.SetActive(false);
+
+        ClearEnemies();
+
+        if (activeRobot != null)
+            Destroy(activeRobot);
+
+        if (robotQuestionText != null)
+            Destroy(robotQuestionText.gameObject);
+
+        GameObject bgObj = GameObject.Find("QuestionBackground3D");
+        if (bgObj != null)
+            Destroy(bgObj);
+
+        if (timerRing != null)
+            Destroy(timerRing.gameObject);
+
+        currentQuestionNumber = 0;
+        score = 0;
+        timer = 0f;
+        waitingForNextQuestion = false;
+
+        if (scoreText != null)
+        {
+            scoreText.gameObject.SetActive(true);
+            scoreText.text = "Score: 0";
+        }
+
         BeginScanning();
     }
 
@@ -565,6 +618,55 @@ public class ARMathShooterGame : MonoBehaviour
         return null;
     }
 
+    private void ReturnToMainMenu()
+    {
+        state = GameState.TitleScreen;
+
+        ClearEnemies();
+
+        if (activeRobot != null)
+            Destroy(activeRobot);
+
+        if (robotQuestionText != null)
+            Destroy(robotQuestionText.gameObject);
+
+        GameObject bgObj = GameObject.Find("QuestionBackground3D");
+        if (bgObj != null)
+            Destroy(bgObj);
+
+        if (timerRing != null)
+            Destroy(timerRing.gameObject);
+
+        currentQuestionNumber = 0;
+        score = 0;
+        timer = 0f;
+        waitingForNextQuestion = false;
+
+        if (titlePanel != null)
+            titlePanel.SetActive(true);
+
+        if (topNotchPanel != null)
+            topNotchPanel.SetActive(false);
+
+        if (instructionText != null)
+        {
+            instructionText.gameObject.SetActive(false);
+            instructionText.text = "";
+        }
+
+        if (scoreText != null)
+        {
+            scoreText.text = "Score: 0";
+            scoreText.gameObject.SetActive(false);
+        }
+
+        if (crosshairText != null)
+            crosshairText.gameObject.SetActive(false);
+
+        if (feedbackText != null)
+            feedbackText.text = "";
+    }
+
     private void ProcessEnemyHit(EnemyData enemy)
     {
         if (waitingForNextQuestion)
@@ -847,13 +949,38 @@ public class ARMathShooterGame : MonoBehaviour
         if (timerRing != null)
             Destroy(timerRing.gameObject);
 
-        if (questionText != null)
-            questionText.text = "Game complete";
-
         if (robotQuestionText != null)
-            robotQuestionText.text = "Game complete";
+            robotQuestionText.text = "";
+
+        GameObject bgObj = GameObject.Find("QuestionBackground3D");
+        if (bgObj != null)
+            Destroy(bgObj);
+
+        if (topNotchPanel != null)
+            topNotchPanel.SetActive(false);
+
+        if (instructionText != null)
+            instructionText.gameObject.SetActive(false);
+
+        if (scoreText != null)
+            scoreText.gameObject.SetActive(false);
+
+        if (crosshairText != null)
+            crosshairText.gameObject.SetActive(false);
 
         if (feedbackText != null)
-            feedbackText.text = "Final score: " + score + "/" + totalQuestions;
+            feedbackText.text = "";
+
+        if (questionText != null)
+        {
+            questionText.gameObject.SetActive(false);
+            questionText.text = "";
+        }
+
+        if (finalScoreText != null)
+            finalScoreText.text = "Final Score: " + score + "/" + totalQuestions;
+
+        if (endPanel != null)
+            endPanel.SetActive(true);
     }
 }
