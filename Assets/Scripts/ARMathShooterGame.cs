@@ -640,19 +640,28 @@ public class ARMathShooterGame : MonoBehaviour
         if (activeRobot == null)
             return;
 
-        GameObject textObj = new GameObject("QuestionText3D");
+        GameObject bgObj = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        bgObj.name = "QuestionBackground3D";
+        bgObj.transform.position = activeRobot.transform.position + Vector3.up * 0.75f;
+        bgObj.transform.localScale = new Vector3(0.75f, 0.22f, 1f);
 
-        // Do NOT parent it to the robot, because robot scale makes the text too small
-        textObj.transform.position = activeRobot.transform.position + Vector3.up * 0.75f;
+        Renderer bgRenderer = bgObj.GetComponent<Renderer>();
+        if (bgRenderer != null)
+        {
+            Material bgMaterial = new Material(Shader.Find("Unlit/Color"));
+            bgMaterial.color = new Color(1f, 1f, 1f, 0.85f);
+            bgRenderer.material = bgMaterial;
+        }
+
+        GameObject textObj = new GameObject("QuestionText3D");
+        textObj.transform.position = activeRobot.transform.position + Vector3.up * 0.76f;
         textObj.transform.localScale = Vector3.one * 0.12f;
 
         robotQuestionText = textObj.AddComponent<TextMeshPro>();
         robotQuestionText.alignment = TextAlignmentOptions.Center;
         robotQuestionText.fontSize = 8;
-        robotQuestionText.color = Color.white;
+        robotQuestionText.color = Color.black;
         robotQuestionText.fontStyle = FontStyles.Bold;
-        robotQuestionText.outlineColor = Color.black;
-        robotQuestionText.outlineWidth = 0.35f;
         robotQuestionText.text = "";
     }
 
@@ -661,12 +670,21 @@ public class ARMathShooterGame : MonoBehaviour
         if (robotQuestionText == null || arCamera == null || activeRobot == null)
             return;
 
-        // Keep question above robot's head in world space
-        robotQuestionText.transform.position = activeRobot.transform.position + Vector3.up * 0.75f;
+        Vector3 textPosition = activeRobot.transform.position + Vector3.up * 0.76f;
+        Vector3 bgPosition = activeRobot.transform.position + Vector3.up * 0.75f;
 
-        // Always face camera
+        robotQuestionText.transform.position = textPosition;
         robotQuestionText.transform.LookAt(arCamera.transform);
         robotQuestionText.transform.Rotate(0, 180f, 0);
+
+        GameObject bgObj = GameObject.Find("QuestionBackground3D");
+
+        if (bgObj != null)
+        {
+            bgObj.transform.position = bgPosition;
+            bgObj.transform.LookAt(arCamera.transform);
+            bgObj.transform.Rotate(0, 180f, 0);
+        }
     }
 
     private Transform FindChildRecursive(Transform parent, string childName)
