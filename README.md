@@ -1,4 +1,4 @@
-# Learning Basic Maths Through Augmented Reality
+# Learning Basic Maths Through Interactive AR Gameplay
 
 ## Project Overview
 
