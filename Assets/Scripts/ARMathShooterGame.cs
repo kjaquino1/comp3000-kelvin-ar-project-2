@@ -23,6 +23,7 @@ public class ARMathShooterGame : MonoBehaviour
     public TextMeshProUGUI feedbackText;
     public TextMeshProUGUI scoreText;
     public TextMeshProUGUI crosshairText;
+    public GameObject topNotchPanel;
 
     [Header("Title Screen")]
     public GameObject titlePanel;
@@ -86,11 +87,15 @@ public class ARMathShooterGame : MonoBehaviour
         if (titlePanel != null)
             titlePanel.SetActive(true);
 
+
         if (instructionText != null)
         {
             instructionText.gameObject.SetActive(false);
             instructionText.text = "";
         }
+
+        if (topNotchPanel != null)
+            topNotchPanel.SetActive(false);
 
         if (questionText != null)
         {
@@ -153,6 +158,9 @@ public class ARMathShooterGame : MonoBehaviour
 
         if (titlePanel != null)
             titlePanel.SetActive(false);
+
+        if (topNotchPanel != null)
+            topNotchPanel.SetActive(true);
 
         if (instructionText != null)
         {
@@ -225,6 +233,9 @@ public class ARMathShooterGame : MonoBehaviour
 
             if (instructionText != null)
                 instructionText.gameObject.SetActive(false);
+
+            if (topNotchPanel != null)
+                topNotchPanel.SetActive(false);
 
             state = GameState.Playing;
             StartNextQuestion();
