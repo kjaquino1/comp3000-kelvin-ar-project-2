@@ -297,7 +297,7 @@ public class ARMathShooterGame : MonoBehaviour
         }
         else
         {
-            enemy = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            enemy = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             enemy.transform.localScale = new Vector3(0.35f, 0.35f, 0.35f);
         }
 
@@ -308,24 +308,23 @@ public class ARMathShooterGame : MonoBehaviour
         if (enemyCollider == null)
             enemy.AddComponent<SphereCollider>();
 
-        // Remove old answer label if prefab already has one
         Transform oldLabel = FindChildRecursive(enemy.transform, "AnswerLabel");
 
         if (oldLabel != null)
             Destroy(oldLabel.gameObject);
 
-        // Create clear 3D number above enemy
         GameObject labelObj = new GameObject("AnswerLabel");
         labelObj.transform.SetParent(enemy.transform);
-        // Put answer on the front surface of the enemy
-        labelObj.transform.localPosition = new Vector3(0f, 0f, -0.38f);
+
+        // Temporary position. UpdateEnemies() will keep this on the front of the enemy.
+        labelObj.transform.localPosition = new Vector3(0f, 0f, -0.42f);
         labelObj.transform.localRotation = Quaternion.identity;
-        labelObj.transform.localScale = Vector3.one * 0.45f;
+        labelObj.transform.localScale = Vector3.one * 0.18f;
 
         TextMeshPro label = labelObj.AddComponent<TextMeshPro>();
         label.text = answer.ToString();
         label.alignment = TextAlignmentOptions.Center;
-        label.fontSize = 10;
+        label.fontSize = 12;
         label.color = Color.white;
         label.fontStyle = FontStyles.Bold;
         label.outlineColor = Color.black;
@@ -334,15 +333,16 @@ public class ARMathShooterGame : MonoBehaviour
         MeshRenderer labelRenderer = label.GetComponent<MeshRenderer>();
 
         if (labelRenderer != null)
-            labelRenderer.sortingOrder = 10;
+            labelRenderer.sortingOrder = 50;
 
-        Renderer renderer = enemy.GetComponentInChildren<Renderer>();
+        // Colour only the enemy body, not the answer text
+        Renderer enemyRenderer = enemy.GetComponent<Renderer>();
 
-        if (renderer != null)
+        if (enemyRenderer != null)
         {
             Material material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             material.color = new Color(0.7f, 0.1f, 1f);
-            renderer.material = material;
+            enemyRenderer.material = material;
         }
 
         return enemy;
@@ -379,6 +379,11 @@ public class ARMathShooterGame : MonoBehaviour
 
             if (label != null)
             {
+                Vector3 directionToCamera = (arCamera.transform.position - enemy.obj.transform.position).normalized;
+
+                // Put the answer on the front face of the enemy, facing the player
+                label.position = enemy.obj.transform.position + directionToCamera * 0.32f;
+
                 label.LookAt(arCamera.transform);
                 label.Rotate(0, 180f, 0);
             }
