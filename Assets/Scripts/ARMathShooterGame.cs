@@ -112,7 +112,10 @@ public class ARMathShooterGame : MonoBehaviour
             feedbackText.text = "";
 
         if (scoreText != null)
+        {
+            scoreText.gameObject.SetActive(false);
             scoreText.text = "Score: 0";
+        }
 
         if (crosshairText != null)
         {
@@ -171,6 +174,12 @@ public class ARMathShooterGame : MonoBehaviour
         {
             instructionText.gameObject.SetActive(true);
             instructionText.text = "Scanning for landing surface...";
+        }
+
+        if (scoreText != null)
+        {
+            scoreText.gameObject.SetActive(true);
+            scoreText.text = "Score: 0";
         }
 
         if (crosshairText != null)
