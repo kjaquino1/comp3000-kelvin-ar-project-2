@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
+using UnityEngine.UI;
 
 public class ARMathShooterGame : MonoBehaviour
 {
@@ -23,6 +24,13 @@ public class ARMathShooterGame : MonoBehaviour
     public TextMeshProUGUI scoreText;
     public TextMeshProUGUI crosshairText;
 
+    [Header("Title Screen")]
+    public GameObject titlePanel;
+    public Button additionButton;
+    public Button subtractionButton;
+    public Button multiplicationButton;
+    public Button divisionButton;
+
     [Header("Game Settings")]
     public int totalQuestions = 10;
     public float questionTime = 10f;
@@ -31,13 +39,22 @@ public class ARMathShooterGame : MonoBehaviour
 
     private enum GameState
     {
+        TitleScreen,
         Scanning,
         ReadyToPlace,
         Playing,
         GameOver
     }
+    private enum OperationMode
+    {
+        Addition,
+        Subtraction,
+        Multiplication,
+        Division
+    }
 
-    private GameState state = GameState.Scanning;
+    private GameState state = GameState.TitleScreen;
+    private OperationMode selectedMode = OperationMode.Addition;
 
     private static readonly List<ARRaycastHit> arHits = new List<ARRaycastHit>();
 
@@ -64,16 +81,22 @@ public class ARMathShooterGame : MonoBehaviour
 
     private void Start()
     {
-        state = GameState.Scanning;
+        state = GameState.TitleScreen;
+
+        if (titlePanel != null)
+            titlePanel.SetActive(true);
 
         if (instructionText != null)
         {
-            instructionText.gameObject.SetActive(true);
-            instructionText.text = "Scanning for landing surface...";
+            instructionText.gameObject.SetActive(false);
+            instructionText.text = "";
         }
 
         if (questionText != null)
+        {
+            questionText.gameObject.SetActive(false);
             questionText.text = "";
+        }
 
         if (feedbackText != null)
             feedbackText.text = "";
@@ -83,9 +106,65 @@ public class ARMathShooterGame : MonoBehaviour
 
         if (crosshairText != null)
         {
-            crosshairText.gameObject.SetActive(true);
+            crosshairText.gameObject.SetActive(false);
             crosshairText.text = "+";
         }
+
+        if (additionButton != null)
+            additionButton.onClick.AddListener(StartAdditionMode);
+
+        if (subtractionButton != null)
+            subtractionButton.onClick.AddListener(StartSubtractionMode);
+
+        if (multiplicationButton != null)
+            multiplicationButton.onClick.AddListener(StartMultiplicationMode);
+
+        if (divisionButton != null)
+            divisionButton.onClick.AddListener(StartDivisionMode);
+    }
+
+    private void StartAdditionMode()
+    {
+        selectedMode = OperationMode.Addition;
+        BeginScanning();
+    }
+
+    private void StartSubtractionMode()
+    {
+        selectedMode = OperationMode.Subtraction;
+        BeginScanning();
+    }
+
+    private void StartMultiplicationMode()
+    {
+        selectedMode = OperationMode.Multiplication;
+        BeginScanning();
+    }
+
+    private void StartDivisionMode()
+    {
+        selectedMode = OperationMode.Division;
+        BeginScanning();
+    }
+
+    private void BeginScanning()
+    {
+        state = GameState.Scanning;
+
+        if (titlePanel != null)
+            titlePanel.SetActive(false);
+
+        if (instructionText != null)
+        {
+            instructionText.gameObject.SetActive(true);
+            instructionText.text = "Scanning for landing surface...";
+        }
+
+        if (crosshairText != null)
+            crosshairText.gameObject.SetActive(true);
+
+        if (feedbackText != null)
+            feedbackText.text = "";
     }
 
     private void Update()
@@ -123,20 +202,25 @@ public class ARMathShooterGame : MonoBehaviour
 
     private void HandleRobotPlacement()
     {
-        if (!TryGetTapPosition(out Vector2 tapPosition))
+        if (!TryGetTapPosition(out _))
             return;
 
         if (arRaycastManager == null)
             return;
 
-        if (arRaycastManager.Raycast(tapPosition, arHits, TrackableType.PlaneWithinPolygon))
+        // Use centre of screen instead of tap position
+        Vector2 crosshairPosition = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+
+        if (arRaycastManager.Raycast(crosshairPosition, arHits, TrackableType.PlaneWithinPolygon))
         {
             Pose hitPose = arHits[0].pose;
 
             activeRobot = Instantiate(robotPrefab, hitPose.position, hitPose.rotation);
 
-            // Make robot smaller
-            activeRobot.transform.localScale = Vector3.one * 0.35f; SetupRobotQuestionText();
+            // Keep robot small
+            activeRobot.transform.localScale = Vector3.one * 0.35f;
+
+            SetupRobotQuestionText();
             CreateTimerRing();
 
             if (instructionText != null)
@@ -144,6 +228,11 @@ public class ARMathShooterGame : MonoBehaviour
 
             state = GameState.Playing;
             StartNextQuestion();
+        }
+        else
+        {
+            if (feedbackText != null)
+                feedbackText.text = "Aim the crosshair at the floor";
         }
     }
 
@@ -184,39 +273,44 @@ public class ARMathShooterGame : MonoBehaviour
 
     private void GenerateQuestion(out string question, out int answer)
     {
-        int operation = Random.Range(0, 4);
-
         int a;
         int b;
 
-        switch (operation)
+        switch (selectedMode)
         {
-            case 0:
+            case OperationMode.Addition:
                 a = Random.Range(1, 11);
                 b = Random.Range(1, 11);
                 answer = a + b;
                 question = $"{a} + {b} = ?";
                 break;
 
-            case 1:
+            case OperationMode.Subtraction:
                 a = Random.Range(5, 21);
                 b = Random.Range(1, a);
                 answer = a - b;
                 question = $"{a} - {b} = ?";
                 break;
 
-            case 2:
+            case OperationMode.Multiplication:
                 a = Random.Range(2, 10);
                 b = Random.Range(2, 10);
                 answer = a * b;
                 question = $"{a} × {b} = ?";
                 break;
 
-            default:
+            case OperationMode.Division:
                 answer = Random.Range(2, 10);
                 b = Random.Range(2, 10);
                 a = answer * b;
                 question = $"{a} ÷ {b} = ?";
+                break;
+
+            default:
+                a = Random.Range(1, 11);
+                b = Random.Range(1, 11);
+                answer = a + b;
+                question = $"{a} + {b} = ?";
                 break;
         }
     }
