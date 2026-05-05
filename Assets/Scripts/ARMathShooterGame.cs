@@ -317,10 +317,10 @@ public class ARMathShooterGame : MonoBehaviour
         // Create clear 3D number above enemy
         GameObject labelObj = new GameObject("AnswerLabel");
         labelObj.transform.SetParent(enemy.transform);
-        // Put answer on the enemy body, not above it
-        labelObj.transform.localPosition = new Vector3(0f, 0.05f, -0.32f);
+        // Put answer on the front surface of the enemy
+        labelObj.transform.localPosition = new Vector3(0f, 0f, -0.38f);
         labelObj.transform.localRotation = Quaternion.identity;
-        labelObj.transform.localScale = Vector3.one * 0.32f;
+        labelObj.transform.localScale = Vector3.one * 0.45f;
 
         TextMeshPro label = labelObj.AddComponent<TextMeshPro>();
         label.text = answer.ToString();
@@ -329,7 +329,7 @@ public class ARMathShooterGame : MonoBehaviour
         label.color = Color.white;
         label.fontStyle = FontStyles.Bold;
         label.outlineColor = Color.black;
-        label.outlineWidth = 0.25f;
+        label.outlineWidth = 0.35f;
 
         MeshRenderer labelRenderer = label.GetComponent<MeshRenderer>();
 
@@ -530,37 +530,31 @@ public class ARMathShooterGame : MonoBehaviour
         if (activeRobot == null)
             return;
 
-        Transform existing = FindChildRecursive(activeRobot.transform, "QuestionText3D");
-
-        if (existing != null)
-        {
-            robotQuestionText = existing.GetComponent<TextMeshPro>();
-            return;
-        }
-
         GameObject textObj = new GameObject("QuestionText3D");
-        textObj.transform.SetParent(activeRobot.transform);
 
-        // Above robot head
-        textObj.transform.localPosition = new Vector3(0f, 2.2f, 0f);
-        textObj.transform.localRotation = Quaternion.identity;
-        textObj.transform.localScale = Vector3.one * 0.35f;
+        // Do NOT parent it to the robot, because robot scale makes the text too small
+        textObj.transform.position = activeRobot.transform.position + Vector3.up * 0.75f;
+        textObj.transform.localScale = Vector3.one * 0.12f;
 
         robotQuestionText = textObj.AddComponent<TextMeshPro>();
         robotQuestionText.alignment = TextAlignmentOptions.Center;
-        robotQuestionText.fontSize = 7;
+        robotQuestionText.fontSize = 8;
         robotQuestionText.color = Color.white;
         robotQuestionText.fontStyle = FontStyles.Bold;
         robotQuestionText.outlineColor = Color.black;
-        robotQuestionText.outlineWidth = 0.25f;
+        robotQuestionText.outlineWidth = 0.35f;
         robotQuestionText.text = "";
     }
 
     private void UpdateRobotQuestionFacingCamera()
     {
-        if (robotQuestionText == null || arCamera == null)
+        if (robotQuestionText == null || arCamera == null || activeRobot == null)
             return;
 
+        // Keep question above robot's head in world space
+        robotQuestionText.transform.position = activeRobot.transform.position + Vector3.up * 0.75f;
+
+        // Always face camera
         robotQuestionText.transform.LookAt(arCamera.transform);
         robotQuestionText.transform.Rotate(0, 180f, 0);
     }
