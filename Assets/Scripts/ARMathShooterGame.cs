@@ -42,11 +42,13 @@ public class ARMathShooterGame : MonoBehaviour
     [Header("Game Settings")]
     public int totalQuestions = 10;
     public float questionTime = 10f;
-    public float enemyRadius = 1.2f;
-    public float enemyHeight = 0.8f;
+    public float enemyRadius = 0.75f;
+    public float enemyHeight = 0.55f;
+    public float robotScale = 0.18f;
+    public float enemyScale = 0.28f;
 
     [Header("Shooting Effect")]
-    public float shootLineDuration = 0.08f;
+    public float shootLineDuration = 0.15f;
     public float enemyDropDuration = 0.45f;
     public float enemyDropDistance = 1.2f;
 
@@ -58,6 +60,7 @@ public class ARMathShooterGame : MonoBehaviour
         Playing,
         GameOver
     }
+
     private enum OperationMode
     {
         Addition,
@@ -73,6 +76,7 @@ public class ARMathShooterGame : MonoBehaviour
 
     private GameObject activeRobot;
     private TextMeshPro robotQuestionText;
+    private GameObject questionBackgroundObj;
     private LineRenderer timerRing;
 
     private int currentQuestionNumber = 0;
@@ -80,12 +84,14 @@ public class ARMathShooterGame : MonoBehaviour
     private int correctAnswer = 0;
     private float timer = 0f;
     private bool waitingForNextQuestion = false;
+    private bool placementInProgress = false;
 
     private readonly List<EnemyData> activeEnemies = new List<EnemyData>();
 
     private class EnemyData
     {
         public GameObject obj;
+        public TextMeshPro label;
         public int answer;
         public bool isCorrect;
         public float angle;
@@ -94,20 +100,155 @@ public class ARMathShooterGame : MonoBehaviour
 
     private void Start()
     {
+        ApplyMobileUILayout();
+
+        if (additionButton != null)
+        {
+            additionButton.onClick.RemoveAllListeners();
+            additionButton.onClick.AddListener(StartAdditionMode);
+        }
+
+        if (subtractionButton != null)
+        {
+            subtractionButton.onClick.RemoveAllListeners();
+            subtractionButton.onClick.AddListener(StartSubtractionMode);
+        }
+
+        if (multiplicationButton != null)
+        {
+            multiplicationButton.onClick.RemoveAllListeners();
+            multiplicationButton.onClick.AddListener(StartMultiplicationMode);
+        }
+
+        if (divisionButton != null)
+        {
+            divisionButton.onClick.RemoveAllListeners();
+            divisionButton.onClick.AddListener(StartDivisionMode);
+        }
+
+        if (backButton != null)
+        {
+            backButton.onClick.RemoveAllListeners();
+            backButton.onClick.AddListener(ReturnToMainMenu);
+        }
+
+        if (playAgainButton != null)
+        {
+            playAgainButton.onClick.RemoveAllListeners();
+            playAgainButton.onClick.AddListener(PlayAgain);
+        }
+
+        if (mainMenuButton != null)
+        {
+            mainMenuButton.onClick.RemoveAllListeners();
+            mainMenuButton.onClick.AddListener(ReturnToMainMenu);
+        }
+
+        ShowTitleScreen();
+    }
+
+    private void ApplyMobileUILayout()
+    {
+        if (topNotchPanel != null)
+        {
+            RectTransform notch = topNotchPanel.GetComponent<RectTransform>();
+
+            if (notch != null)
+            {
+                notch.anchorMin = new Vector2(0f, 1f);
+                notch.anchorMax = new Vector2(1f, 1f);
+                notch.pivot = new Vector2(0.5f, 1f);
+                notch.anchoredPosition = new Vector2(0f, -95f);
+                notch.sizeDelta = new Vector2(0f, 90f);
+            }
+        }
+
+        if (instructionText != null)
+        {
+            RectTransform instructionRect = instructionText.GetComponent<RectTransform>();
+
+            if (instructionRect != null)
+            {
+                instructionRect.anchorMin = new Vector2(0f, 0f);
+                instructionRect.anchorMax = new Vector2(1f, 1f);
+                instructionRect.pivot = new Vector2(0.5f, 0.5f);
+                instructionRect.offsetMin = new Vector2(130f, 0f);
+                instructionRect.offsetMax = new Vector2(-20f, 0f);
+            }
+
+            instructionText.alignment = TextAlignmentOptions.Center;
+            instructionText.fontSize = 28;
+            instructionText.color = Color.black;
+            instructionText.enableWordWrapping = false;
+        }
+
+        if (backButton != null)
+        {
+            RectTransform backRect = backButton.GetComponent<RectTransform>();
+
+            if (backRect != null)
+            {
+                backRect.anchorMin = new Vector2(0f, 0.5f);
+                backRect.anchorMax = new Vector2(0f, 0.5f);
+                backRect.pivot = new Vector2(0f, 0.5f);
+                backRect.anchoredPosition = new Vector2(10f, 0f);
+                backRect.sizeDelta = new Vector2(120f, 80f);
+            }
+
+            TextMeshProUGUI backText = backButton.GetComponentInChildren<TextMeshProUGUI>();
+
+            if (backText != null)
+            {
+                backText.text = "<";
+                backText.fontSize = 58;
+                backText.fontStyle = FontStyles.Bold;
+                backText.alignment = TextAlignmentOptions.Center;
+                backText.color = Color.black;
+            }
+        }
+
+        if (scoreText != null)
+        {
+            RectTransform scoreRect = scoreText.GetComponent<RectTransform>();
+
+            if (scoreRect != null)
+            {
+                scoreRect.anchorMin = new Vector2(0f, 0f);
+                scoreRect.anchorMax = new Vector2(0f, 0f);
+                scoreRect.pivot = new Vector2(0f, 0f);
+                scoreRect.anchoredPosition = new Vector2(30f, 30f);
+                scoreRect.sizeDelta = new Vector2(350f, 80f);
+            }
+
+            scoreText.alignment = TextAlignmentOptions.Left;
+            scoreText.fontSize = 36;
+            scoreText.color = Color.white;
+            scoreText.fontStyle = FontStyles.Bold;
+            scoreText.outlineColor = Color.black;
+            scoreText.outlineWidth = 0.35f;
+        }
+    }
+
+    private void ShowTitleScreen()
+    {
         state = GameState.TitleScreen;
+
+        ResetRuntimeObjects();
 
         if (titlePanel != null)
             titlePanel.SetActive(true);
 
+        if (endPanel != null)
+            endPanel.SetActive(false);
+
+        if (topNotchPanel != null)
+            topNotchPanel.SetActive(false);
 
         if (instructionText != null)
         {
             instructionText.gameObject.SetActive(false);
             instructionText.text = "";
         }
-
-        if (topNotchPanel != null)
-            topNotchPanel.SetActive(false);
 
         if (questionText != null)
         {
@@ -129,69 +270,11 @@ public class ARMathShooterGame : MonoBehaviour
             crosshairText.gameObject.SetActive(false);
             crosshairText.text = "+";
         }
-
-        if (additionButton != null)
-            additionButton.onClick.AddListener(StartAdditionMode);
-
-        if (subtractionButton != null)
-            subtractionButton.onClick.AddListener(StartSubtractionMode);
-
-        if (multiplicationButton != null)
-            multiplicationButton.onClick.AddListener(StartMultiplicationMode);
-
-        if (divisionButton != null)
-            divisionButton.onClick.AddListener(StartDivisionMode);
-
-        if (backButton != null)
-            backButton.onClick.AddListener(ReturnToMainMenu);
-
-        if (playAgainButton != null)
-            playAgainButton.onClick.AddListener(PlayAgain);
-
-        if (mainMenuButton != null)
-            mainMenuButton.onClick.AddListener(ReturnToMainMenu);
-
-        if (endPanel != null)
-            endPanel.SetActive(false);
     }
 
     private void StartAdditionMode()
     {
         selectedMode = OperationMode.Addition;
-        BeginScanning();
-    }
-
-    private void PlayAgain()
-    {
-        if (endPanel != null)
-            endPanel.SetActive(false);
-
-        ClearEnemies();
-
-        if (activeRobot != null)
-            Destroy(activeRobot);
-
-        if (robotQuestionText != null)
-            Destroy(robotQuestionText.gameObject);
-
-        GameObject bgObj = GameObject.Find("QuestionBackground3D");
-        if (bgObj != null)
-            Destroy(bgObj);
-
-        if (timerRing != null)
-            Destroy(timerRing.gameObject);
-
-        currentQuestionNumber = 0;
-        score = 0;
-        timer = 0f;
-        waitingForNextQuestion = false;
-
-        if (scoreText != null)
-        {
-            scoreText.gameObject.SetActive(true);
-            scoreText.text = "Score: 0";
-        }
-
         BeginScanning();
     }
 
@@ -215,10 +298,22 @@ public class ARMathShooterGame : MonoBehaviour
 
     private void BeginScanning()
     {
+        ResetRuntimeObjects();
+
         state = GameState.Scanning;
+        placementInProgress = false;
+        currentQuestionNumber = 0;
+        score = 0;
+        timer = 0f;
+        waitingForNextQuestion = false;
+
+        ApplyMobileUILayout();
 
         if (titlePanel != null)
             titlePanel.SetActive(false);
+
+        if (endPanel != null)
+            endPanel.SetActive(false);
 
         if (topNotchPanel != null)
             topNotchPanel.SetActive(true);
@@ -236,10 +331,23 @@ public class ARMathShooterGame : MonoBehaviour
         }
 
         if (crosshairText != null)
+        {
             crosshairText.gameObject.SetActive(true);
+            crosshairText.text = "+";
+        }
 
         if (feedbackText != null)
             feedbackText.text = "";
+    }
+
+    private void PlayAgain()
+    {
+        BeginScanning();
+    }
+
+    private void ReturnToMainMenu()
+    {
+        ShowTitleScreen();
     }
 
     private void Update()
@@ -271,50 +379,49 @@ public class ARMathShooterGame : MonoBehaviour
             state = GameState.ReadyToPlace;
 
             if (instructionText != null)
-                instructionText.text = "Scanning complete, tap to teleport";
+                instructionText.text = "Aim crosshair at floor, then tap";
         }
     }
 
     private void HandleRobotPlacement()
     {
+        if (state != GameState.ReadyToPlace)
+            return;
+
+        if (activeRobot != null || placementInProgress)
+            return;
+
         if (!TryGetTapPosition(out _))
             return;
 
         if (arRaycastManager == null)
             return;
 
-        // Use centre of screen instead of tap position
         Vector2 crosshairPosition = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
 
-        if (arRaycastManager.Raycast(crosshairPosition, arHits, TrackableType.PlaneWithinPolygon))
+        if (!arRaycastManager.Raycast(crosshairPosition, arHits, TrackableType.PlaneWithinPolygon))
         {
-            Pose hitPose = arHits[0].pose;
-
-            activeRobot = Instantiate(robotPrefab, hitPose.position, hitPose.rotation);
-
-            // Keep robot small
-            activeRobot.transform.localScale = Vector3.one * 0.35f;
-
-            SetupRobotQuestionText();
-            CreateTimerRing();
-
-            if (topNotchPanel != null)
-                topNotchPanel.SetActive(true);
-
             if (instructionText != null)
-            {
-                instructionText.gameObject.SetActive(true);
-                instructionText.text = "Hit the correct answer";
-            }
+                instructionText.text = "Aim the crosshair at the floor";
 
-            state = GameState.Playing;
-            StartNextQuestion();
+            return;
         }
-        else
-        {
-            if (feedbackText != null)
-                feedbackText.text = "Aim the crosshair at the floor";
-        }
+
+        placementInProgress = true;
+        state = GameState.Playing;
+
+        Pose hitPose = arHits[0].pose;
+
+        activeRobot = Instantiate(robotPrefab, hitPose.position, hitPose.rotation);
+        activeRobot.transform.localScale = Vector3.one * robotScale;
+
+        SetupRobotQuestionText();
+        CreateTimerRing();
+
+        if (instructionText != null)
+            instructionText.text = "Hit the correct answer";
+
+        StartNextQuestion();
     }
 
     private void StartNextQuestion()
@@ -332,28 +439,20 @@ public class ARMathShooterGame : MonoBehaviour
 
         GenerateQuestion(out string question, out correctAnswer);
 
-        // Do not show question on screen UI
         if (questionText != null)
         {
             questionText.gameObject.SetActive(false);
             questionText.text = "";
         }
 
-        // Show question only above robot head
         if (robotQuestionText != null)
             robotQuestionText.text = question;
-
-        if (topNotchPanel != null)
-            topNotchPanel.SetActive(true);
 
         if (instructionText != null)
         {
             instructionText.gameObject.SetActive(true);
             instructionText.text = "Hit the correct answer";
         }
-
-        if (feedbackText != null)
-            feedbackText.text = "";
 
         timer = questionTime;
 
@@ -421,26 +520,33 @@ public class ARMathShooterGame : MonoBehaviour
 
     private void SpawnAnswerEnemies()
     {
+        if (activeRobot == null)
+            return;
+
         int enemyCount = GetEnemyCount();
         List<int> answers = GenerateAnswerOptions(enemyCount);
 
-        float baseSpeed = 30f + currentQuestionNumber * 8f;
+        float baseSpeed = 25f + currentQuestionNumber * 6f;
 
         for (int i = 0; i < enemyCount; i++)
         {
-            GameObject enemy = CreateEnemyObject(answers[i]);
+            TextMeshPro label;
+            GameObject enemy = CreateEnemyObject(answers[i], out label);
 
             EnemyData data = new EnemyData
             {
                 obj = enemy,
+                label = label,
                 answer = answers[i],
                 isCorrect = answers[i] == correctAnswer,
                 angle = (360f / enemyCount) * i,
-                speed = baseSpeed + Random.Range(-8f, 8f)
+                speed = baseSpeed + Random.Range(-5f, 5f)
             };
 
             activeEnemies.Add(data);
         }
+
+        UpdateEnemies();
     }
 
     private List<int> GenerateAnswerOptions(int count)
@@ -451,12 +557,16 @@ public class ARMathShooterGame : MonoBehaviour
         while (answers.Count < count)
         {
             int offset = Random.Range(-8, 9);
+
+            if (offset == 0)
+                continue;
+
             int wrongAnswer = correctAnswer + offset;
 
             if (wrongAnswer < 0)
                 wrongAnswer = Mathf.Abs(wrongAnswer) + 1;
 
-            if (wrongAnswer != correctAnswer && !answers.Contains(wrongAnswer))
+            if (!answers.Contains(wrongAnswer))
                 answers.Add(wrongAnswer);
         }
 
@@ -471,7 +581,7 @@ public class ARMathShooterGame : MonoBehaviour
         return answers;
     }
 
-    private GameObject CreateEnemyObject(int answer)
+    private GameObject CreateEnemyObject(int answer, out TextMeshPro label)
     {
         GameObject enemy;
 
@@ -482,52 +592,45 @@ public class ARMathShooterGame : MonoBehaviour
         else
         {
             enemy = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            enemy.transform.localScale = new Vector3(0.35f, 0.35f, 0.35f);
         }
 
         enemy.name = "AnswerEnemy_" + answer;
+        enemy.SetActive(true);
+        enemy.transform.localScale = Vector3.one * enemyScale;
 
         Collider enemyCollider = enemy.GetComponent<Collider>();
 
         if (enemyCollider == null)
-            enemy.AddComponent<SphereCollider>();
+            enemyCollider = enemy.AddComponent<SphereCollider>();
 
-        Transform oldLabel = FindChildRecursive(enemy.transform, "AnswerLabel");
+        enemyCollider.enabled = true;
 
-        if (oldLabel != null)
-            Destroy(oldLabel.gameObject);
-
-        GameObject labelObj = new GameObject("AnswerLabel");
-        labelObj.transform.SetParent(enemy.transform);
-
-        // Temporary position. UpdateEnemies() will keep this on the front of the enemy.
-        labelObj.transform.localPosition = new Vector3(0f, 0f, -0.42f);
-        labelObj.transform.localRotation = Quaternion.identity;
-        labelObj.transform.localScale = Vector3.one * 0.18f;
-
-        TextMeshPro label = labelObj.AddComponent<TextMeshPro>();
-        label.text = answer.ToString();
-        label.alignment = TextAlignmentOptions.Center;
-        label.fontSize = 12;
-        label.color = Color.white;
-        label.fontStyle = FontStyles.Bold;
-        label.outlineColor = Color.black;
-        label.outlineWidth = 0.35f;
-
-        MeshRenderer labelRenderer = label.GetComponent<MeshRenderer>();
-
-        if (labelRenderer != null)
-            labelRenderer.sortingOrder = 50;
-
-        // Colour only the enemy body, not the answer text
         Renderer enemyRenderer = enemy.GetComponent<Renderer>();
+
+        if (enemyRenderer == null)
+            enemyRenderer = enemy.GetComponentInChildren<Renderer>();
 
         if (enemyRenderer != null)
         {
             Material material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+
+            if (material.shader == null)
+                material = new Material(Shader.Find("Standard"));
+
             material.color = new Color(0.7f, 0.1f, 1f);
             enemyRenderer.material = material;
         }
+
+        GameObject labelObj = new GameObject("AnswerLabel_" + answer);
+        label = labelObj.AddComponent<TextMeshPro>();
+        label.text = answer.ToString();
+        label.alignment = TextAlignmentOptions.Center;
+        label.fontSize = 8;
+        label.color = Color.black;
+        label.fontStyle = FontStyles.Bold;
+        label.outlineColor = Color.white;
+        label.outlineWidth = 0.25f;
+        label.transform.localScale = Vector3.one * 0.09f;
 
         return enemy;
     }
@@ -539,6 +642,9 @@ public class ARMathShooterGame : MonoBehaviour
 
         Vector3 center = activeRobot.transform.position;
 
+        float radius = Mathf.Clamp(enemyRadius, 0.45f, 0.85f);
+        float height = Mathf.Clamp(enemyHeight, 0.35f, 0.65f);
+
         foreach (EnemyData enemy in activeEnemies)
         {
             if (enemy.obj == null)
@@ -547,35 +653,33 @@ public class ARMathShooterGame : MonoBehaviour
             enemy.angle += enemy.speed * Time.deltaTime;
 
             float radians = enemy.angle * Mathf.Deg2Rad;
-            float floatOffset = Mathf.Sin(Time.time * 2f + radians) * 0.15f;
+            float floatOffset = Mathf.Sin(Time.time * 2f + radians) * 0.12f;
 
-            Vector3 position = center + new Vector3(
-                Mathf.Cos(radians) * enemyRadius,
-                enemyHeight + floatOffset,
-                Mathf.Sin(radians) * enemyRadius
+            Vector3 enemyPosition = center + new Vector3(
+                Mathf.Cos(radians) * radius,
+                height + floatOffset,
+                Mathf.Sin(radians) * radius
             );
 
-            enemy.obj.transform.position = position;
+            enemy.obj.transform.position = enemyPosition;
             enemy.obj.transform.LookAt(arCamera.transform);
-            enemy.obj.transform.Rotate(0, 180f, 0);
+            enemy.obj.transform.Rotate(0f, 180f, 0f);
 
-            Transform label = FindChildRecursive(enemy.obj.transform, "AnswerLabel");
-
-            if (label != null)
+            if (enemy.label != null)
             {
-                Vector3 directionToCamera = (arCamera.transform.position - enemy.obj.transform.position).normalized;
-
-                // Put the answer on the front face of the enemy, facing the player
-                label.position = enemy.obj.transform.position + directionToCamera * 0.32f;
-
-                label.LookAt(arCamera.transform);
-                label.Rotate(0, 180f, 0);
+                Vector3 directionToCamera = (arCamera.transform.position - enemyPosition).normalized;
+                enemy.label.transform.position = enemyPosition + directionToCamera * 0.18f;
+                enemy.label.transform.LookAt(arCamera.transform);
+                enemy.label.transform.Rotate(0f, 180f, 0f);
             }
         }
     }
 
     private void HandleShooting()
     {
+        if (waitingForNextQuestion)
+            return;
+
         if (!TryGetTapPosition(out _))
             return;
 
@@ -618,66 +722,16 @@ public class ARMathShooterGame : MonoBehaviour
         return null;
     }
 
-    private void ReturnToMainMenu()
-    {
-        state = GameState.TitleScreen;
-
-        ClearEnemies();
-
-        if (activeRobot != null)
-            Destroy(activeRobot);
-
-        if (robotQuestionText != null)
-            Destroy(robotQuestionText.gameObject);
-
-        GameObject bgObj = GameObject.Find("QuestionBackground3D");
-        if (bgObj != null)
-            Destroy(bgObj);
-
-        if (timerRing != null)
-            Destroy(timerRing.gameObject);
-
-        currentQuestionNumber = 0;
-        score = 0;
-        timer = 0f;
-        waitingForNextQuestion = false;
-
-        if (titlePanel != null)
-            titlePanel.SetActive(true);
-
-        if (topNotchPanel != null)
-            topNotchPanel.SetActive(false);
-
-        if (instructionText != null)
-        {
-            instructionText.gameObject.SetActive(false);
-            instructionText.text = "";
-        }
-
-        if (scoreText != null)
-        {
-            scoreText.text = "Score: 0";
-            scoreText.gameObject.SetActive(false);
-        }
-
-        if (crosshairText != null)
-            crosshairText.gameObject.SetActive(false);
-
-        if (feedbackText != null)
-            feedbackText.text = "";
-    }
-
     private void ProcessEnemyHit(EnemyData enemy)
     {
         if (waitingForNextQuestion)
             return;
 
-        GameObject enemyObj = enemy.obj;
-
         activeEnemies.Remove(enemy);
 
         if (enemy.isCorrect)
         {
+            waitingForNextQuestion = true;
             score++;
 
             if (instructionText != null)
@@ -685,7 +739,7 @@ public class ARMathShooterGame : MonoBehaviour
 
             UpdateScoreText();
 
-            StartCoroutine(DropEnemyThenDestroy(enemyObj));
+            StartCoroutine(DropEnemyThenDestroy(enemy));
             StartCoroutine(NextQuestionAfterDelay(0.8f));
         }
         else
@@ -693,28 +747,31 @@ public class ARMathShooterGame : MonoBehaviour
             timer = Mathf.Max(0f, timer - 1f);
 
             if (instructionText != null)
-                instructionText.text = "Wrong!";
+                instructionText.text = "Wrong! -1 second";
 
-            StartCoroutine(DropEnemyThenDestroy(enemyObj));
+            StartCoroutine(DropEnemyThenDestroy(enemy));
         }
     }
 
     private IEnumerator NextQuestionAfterDelay(float delay)
     {
-        waitingForNextQuestion = true;
         yield return new WaitForSeconds(delay);
         StartNextQuestion();
     }
 
     private void UpdateTimer()
     {
+        if (waitingForNextQuestion)
+            return;
+
         timer -= Time.deltaTime;
 
         UpdateTimerRing();
 
-        if (timer <= 0f && !waitingForNextQuestion)
+        if (timer <= 0f)
         {
             timer = 0f;
+            waitingForNextQuestion = true;
 
             if (instructionText != null)
                 instructionText.text = "Time's up!";
@@ -728,13 +785,16 @@ public class ARMathShooterGame : MonoBehaviour
         if (activeRobot == null)
             return;
 
+        if (timerRing != null)
+            Destroy(timerRing.gameObject);
+
         GameObject ringObj = new GameObject("TimerRing");
         ringObj.transform.position = activeRobot.transform.position + Vector3.up * 0.02f;
 
         timerRing = ringObj.AddComponent<LineRenderer>();
         timerRing.useWorldSpace = true;
         timerRing.loop = false;
-        timerRing.widthMultiplier = 0.06f;
+        timerRing.widthMultiplier = 0.04f;
         timerRing.positionCount = 64;
         timerRing.material = new Material(Shader.Find("Sprites/Default"));
     }
@@ -761,11 +821,12 @@ public class ARMathShooterGame : MonoBehaviour
         timerRing.endColor = ringColor;
 
         Vector3 center = activeRobot.transform.position + Vector3.up * 0.03f;
-        float radius = 0.65f;
+        float radius = 0.38f;
 
         for (int i = 0; i < segments; i++)
         {
             float angle = ((float)i / 63f) * Mathf.PI * 2f * percent;
+
             Vector3 point = center + new Vector3(
                 Mathf.Cos(angle) * radius,
                 0f,
@@ -781,29 +842,39 @@ public class ARMathShooterGame : MonoBehaviour
         if (activeRobot == null)
             return;
 
-        GameObject bgObj = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        bgObj.name = "QuestionBackground3D";
-        bgObj.transform.position = activeRobot.transform.position + Vector3.up * 0.75f;
-        bgObj.transform.localScale = new Vector3(0.75f, 0.22f, 1f);
+        if (questionBackgroundObj != null)
+            Destroy(questionBackgroundObj);
 
-        Renderer bgRenderer = bgObj.GetComponent<Renderer>();
+        questionBackgroundObj = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        questionBackgroundObj.name = "QuestionBackground3D";
+
+        Collider bgCollider = questionBackgroundObj.GetComponent<Collider>();
+
+        if (bgCollider != null)
+            Destroy(bgCollider);
+
+        Renderer bgRenderer = questionBackgroundObj.GetComponent<Renderer>();
+
         if (bgRenderer != null)
         {
-            Material bgMaterial = new Material(Shader.Find("Unlit/Color"));
-            bgMaterial.color = new Color(1f, 1f, 1f, 0.85f);
+            Shader bgShader = Shader.Find("Universal Render Pipeline/Unlit");
+
+            if (bgShader == null)
+                bgShader = Shader.Find("Sprites/Default");
+
+            Material bgMaterial = new Material(bgShader);
+            bgMaterial.color = Color.white;
             bgRenderer.material = bgMaterial;
         }
 
         GameObject textObj = new GameObject("QuestionText3D");
-        textObj.transform.position = activeRobot.transform.position + Vector3.up * 0.76f;
-        textObj.transform.localScale = Vector3.one * 0.12f;
-
         robotQuestionText = textObj.AddComponent<TextMeshPro>();
         robotQuestionText.alignment = TextAlignmentOptions.Center;
         robotQuestionText.fontSize = 8;
         robotQuestionText.color = Color.black;
         robotQuestionText.fontStyle = FontStyles.Bold;
         robotQuestionText.text = "";
+        robotQuestionText.transform.localScale = Vector3.one * 0.09f;
     }
 
     private void UpdateRobotQuestionFacingCamera()
@@ -811,37 +882,20 @@ public class ARMathShooterGame : MonoBehaviour
         if (robotQuestionText == null || arCamera == null || activeRobot == null)
             return;
 
-        Vector3 textPosition = activeRobot.transform.position + Vector3.up * 0.76f;
-        Vector3 bgPosition = activeRobot.transform.position + Vector3.up * 0.75f;
+        Vector3 textPosition = activeRobot.transform.position + Vector3.up * 0.48f;
+        Vector3 bgPosition = activeRobot.transform.position + Vector3.up * 0.47f;
 
         robotQuestionText.transform.position = textPosition;
         robotQuestionText.transform.LookAt(arCamera.transform);
-        robotQuestionText.transform.Rotate(0, 180f, 0);
+        robotQuestionText.transform.Rotate(0f, 180f, 0f);
 
-        GameObject bgObj = GameObject.Find("QuestionBackground3D");
-
-        if (bgObj != null)
+        if (questionBackgroundObj != null)
         {
-            bgObj.transform.position = bgPosition;
-            bgObj.transform.LookAt(arCamera.transform);
-            bgObj.transform.Rotate(0, 180f, 0);
+            questionBackgroundObj.transform.position = bgPosition;
+            questionBackgroundObj.transform.localScale = new Vector3(0.65f, 0.20f, 1f);
+            questionBackgroundObj.transform.LookAt(arCamera.transform);
+            questionBackgroundObj.transform.Rotate(0f, 180f, 0f);
         }
-    }
-
-    private Transform FindChildRecursive(Transform parent, string childName)
-    {
-        foreach (Transform child in parent)
-        {
-            if (child.name == childName)
-                return child;
-
-            Transform result = FindChildRecursive(child, childName);
-
-            if (result != null)
-                return result;
-        }
-
-        return null;
     }
 
     private bool TryGetTapPosition(out Vector2 position)
@@ -868,9 +922,36 @@ public class ARMathShooterGame : MonoBehaviour
         {
             if (enemy.obj != null)
                 Destroy(enemy.obj);
+
+            if (enemy.label != null)
+                Destroy(enemy.label.gameObject);
         }
 
         activeEnemies.Clear();
+    }
+
+    private void ResetRuntimeObjects()
+    {
+        ClearEnemies();
+
+        if (activeRobot != null)
+            Destroy(activeRobot);
+
+        if (robotQuestionText != null)
+            Destroy(robotQuestionText.gameObject);
+
+        if (questionBackgroundObj != null)
+            Destroy(questionBackgroundObj);
+
+        if (timerRing != null)
+            Destroy(timerRing.gameObject);
+
+        activeRobot = null;
+        robotQuestionText = null;
+        questionBackgroundObj = null;
+        timerRing = null;
+        placementInProgress = false;
+        waitingForNextQuestion = false;
     }
 
     private void UpdateScoreText()
@@ -878,6 +959,7 @@ public class ARMathShooterGame : MonoBehaviour
         if (scoreText != null)
             scoreText.text = "Score: " + score;
     }
+
     private IEnumerator ShootLineEffect(Vector3 start, Vector3 end)
     {
         GameObject lineObj = new GameObject("ShootLineEffect");
@@ -896,49 +978,66 @@ public class ARMathShooterGame : MonoBehaviour
         GameObject impactObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         impactObj.name = "ShootImpactEffect";
         impactObj.transform.position = end;
-        impactObj.transform.localScale = Vector3.one * 0.12f;
+        impactObj.transform.localScale = Vector3.one * 0.10f;
+
+        Collider impactCollider = impactObj.GetComponent<Collider>();
+
+        if (impactCollider != null)
+            Destroy(impactCollider);
 
         Renderer impactRenderer = impactObj.GetComponent<Renderer>();
 
         if (impactRenderer != null)
         {
             Material impactMaterial = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+
+            if (impactMaterial.shader == null)
+                impactMaterial = new Material(Shader.Find("Standard"));
+
             impactMaterial.color = Color.yellow;
             impactRenderer.material = impactMaterial;
         }
 
-        yield return new WaitForSeconds(0.25f);
+        yield return new WaitForSeconds(shootLineDuration);
 
         Destroy(lineObj);
         Destroy(impactObj);
     }
 
-    private IEnumerator DropEnemyThenDestroy(GameObject enemyObj)
+    private IEnumerator DropEnemyThenDestroy(EnemyData enemy)
     {
-        if (enemyObj == null)
+        if (enemy == null || enemy.obj == null)
             yield break;
 
-        Vector3 startPosition = enemyObj.transform.position;
+        Vector3 startPosition = enemy.obj.transform.position;
         Vector3 endPosition = startPosition + Vector3.down * enemyDropDistance;
 
         float elapsed = 0f;
 
         while (elapsed < enemyDropDuration)
         {
-            if (enemyObj == null)
+            if (enemy.obj == null)
                 yield break;
 
             elapsed += Time.deltaTime;
             float t = elapsed / enemyDropDuration;
 
-            enemyObj.transform.position = Vector3.Lerp(startPosition, endPosition, t);
-            enemyObj.transform.Rotate(0f, 0f, 720f * Time.deltaTime);
+            enemy.obj.transform.position = Vector3.Lerp(startPosition, endPosition, t);
+            enemy.obj.transform.Rotate(0f, 0f, 720f * Time.deltaTime);
+
+            if (enemy.label != null)
+            {
+                enemy.label.transform.position = enemy.obj.transform.position + Vector3.up * 0.05f;
+            }
 
             yield return null;
         }
 
-        if (enemyObj != null)
-            Destroy(enemyObj);
+        if (enemy.obj != null)
+            Destroy(enemy.obj);
+
+        if (enemy.label != null)
+            Destroy(enemy.label.gameObject);
     }
 
     private void EndGame()
@@ -952,9 +1051,8 @@ public class ARMathShooterGame : MonoBehaviour
         if (robotQuestionText != null)
             robotQuestionText.text = "";
 
-        GameObject bgObj = GameObject.Find("QuestionBackground3D");
-        if (bgObj != null)
-            Destroy(bgObj);
+        if (questionBackgroundObj != null)
+            Destroy(questionBackgroundObj);
 
         if (topNotchPanel != null)
             topNotchPanel.SetActive(false);
