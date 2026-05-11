@@ -361,6 +361,7 @@ public class ARMathShooterGame : MonoBehaviour
         else if (state == GameState.Playing)
         {
             UpdateTimer();
+            UpdateRobotFacingCamera();
             UpdateEnemies();
             UpdateRobotQuestionFacingCamera();
             HandleShooting();
@@ -414,6 +415,7 @@ public class ARMathShooterGame : MonoBehaviour
 
         activeRobot = Instantiate(robotPrefab, hitPose.position, hitPose.rotation);
         activeRobot.transform.localScale = Vector3.one * robotScale;
+        UpdateRobotFacingCamera();
 
         SetupRobotQuestionText();
         CreateTimerRing();
@@ -422,6 +424,22 @@ public class ARMathShooterGame : MonoBehaviour
             instructionText.text = "Hit the correct answer";
 
         StartNextQuestion();
+    }
+
+    private void UpdateRobotFacingCamera()
+    {
+        if (activeRobot == null || arCamera == null)
+            return;
+
+        Vector3 directionToCamera = arCamera.transform.position - activeRobot.transform.position;
+        directionToCamera.y = 0f;
+
+        if (directionToCamera.sqrMagnitude < 0.001f)
+            return;
+
+        Quaternion lookRotation = Quaternion.LookRotation(directionToCamera);
+
+        activeRobot.transform.rotation = lookRotation * Quaternion.Euler(0f, 180f, 0f);
     }
 
     private void StartNextQuestion()
