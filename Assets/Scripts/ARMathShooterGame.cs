@@ -42,10 +42,10 @@ public class ARMathShooterGame : MonoBehaviour
     [Header("Game Settings")]
     public int totalQuestions = 10;
     public float questionTime = 10f;
-    public float enemyRadius = 0.65f;
-    public float enemyHeight = 0.50f;
-    public float robotScale = 0.18f;
-    public float enemyScale = 0.14f;
+    public float enemyRadius = 0.38f;
+    public float enemyHeight = 0.32f;
+    public float robotScale = 0.12f;
+    public float enemyScale = 0.08f;
 
     [Header("Shooting Effect")]
     public float shootLineDuration = 0.15f;
@@ -660,8 +660,8 @@ public class ARMathShooterGame : MonoBehaviour
 
         Vector3 center = activeRobot.transform.position;
 
-        float radius = Mathf.Clamp(enemyRadius, 0.45f, 0.85f);
-        float height = Mathf.Clamp(enemyHeight, 0.35f, 0.65f);
+        float radius = Mathf.Clamp(enemyRadius, 0.25f, 0.50f);
+        float height = Mathf.Clamp(enemyHeight, 0.22f, 0.42f);
 
         foreach (EnemyData enemy in activeEnemies)
         {
@@ -903,7 +903,7 @@ public class ARMathShooterGame : MonoBehaviour
         timerRing.endColor = ringColor;
 
         Vector3 center = activeRobot.transform.position + Vector3.up * 0.03f;
-        float radius = 0.52f;
+        float radius = 0.32f;
 
         for (int i = 0; i < segments; i++)
         {
@@ -956,7 +956,7 @@ public class ARMathShooterGame : MonoBehaviour
         robotQuestionText.color = Color.black;
         robotQuestionText.fontStyle = FontStyles.Bold;
         robotQuestionText.text = "";
-        robotQuestionText.transform.localScale = Vector3.one * 0.09f;
+        robotQuestionText.transform.localScale = Vector3.one * 0.055f;
     }
 
     private void UpdateRobotQuestionFacingCamera()
@@ -964,8 +964,8 @@ public class ARMathShooterGame : MonoBehaviour
         if (robotQuestionText == null || arCamera == null || activeRobot == null)
             return;
 
-        Vector3 textPosition = activeRobot.transform.position + Vector3.up * 0.58f;
-        Vector3 bgPosition = activeRobot.transform.position + Vector3.up * 0.57f;
+        Vector3 textPosition = activeRobot.transform.position + Vector3.up * 0.38f;
+        Vector3 bgPosition = activeRobot.transform.position + Vector3.up * 0.37f;
 
         robotQuestionText.transform.position = textPosition;
         robotQuestionText.transform.LookAt(arCamera.transform);
@@ -974,7 +974,7 @@ public class ARMathShooterGame : MonoBehaviour
         if (questionBackgroundObj != null)
         {
             questionBackgroundObj.transform.position = bgPosition;
-            questionBackgroundObj.transform.localScale = new Vector3(0.70f, 0.22f, 1f);
+            questionBackgroundObj.transform.localScale = new Vector3(0.42f, 0.14f, 1f);
             questionBackgroundObj.transform.LookAt(arCamera.transform);
             questionBackgroundObj.transform.Rotate(0f, 180f, 0f);
         }
