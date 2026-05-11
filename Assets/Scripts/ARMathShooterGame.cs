@@ -42,10 +42,10 @@ public class ARMathShooterGame : MonoBehaviour
     [Header("Game Settings")]
     public int totalQuestions = 10;
     public float questionTime = 10f;
-    public float enemyRadius = 0.75f;
-    public float enemyHeight = 0.55f;
+    public float enemyRadius = 0.65f;
+    public float enemyHeight = 0.50f;
     public float robotScale = 0.18f;
-    public float enemyScale = 0.28f;
+    public float enemyScale = 0.14f;
 
     [Header("Shooting Effect")]
     public float shootLineDuration = 0.15f;
@@ -217,11 +217,11 @@ public class ARMathShooterGame : MonoBehaviour
                 scoreRect.anchorMax = new Vector2(0f, 0f);
                 scoreRect.pivot = new Vector2(0f, 0f);
                 scoreRect.anchoredPosition = new Vector2(30f, 30f);
-                scoreRect.sizeDelta = new Vector2(350f, 80f);
+                scoreRect.sizeDelta = new Vector2(300f, 70f);
             }
 
             scoreText.alignment = TextAlignmentOptions.Left;
-            scoreText.fontSize = 36;
+            scoreText.fontSize = 28;
             scoreText.color = Color.white;
             scoreText.fontStyle = FontStyles.Bold;
             scoreText.outlineColor = Color.black;
@@ -668,7 +668,7 @@ public class ARMathShooterGame : MonoBehaviour
             if (enemy.label != null)
             {
                 Vector3 directionToCamera = (arCamera.transform.position - enemyPosition).normalized;
-                enemy.label.transform.position = enemyPosition + directionToCamera * 0.18f;
+                enemy.label.transform.position = enemyPosition + directionToCamera * 0.14f;
                 enemy.label.transform.LookAt(arCamera.transform);
                 enemy.label.transform.Rotate(0f, 180f, 0f);
             }
@@ -739,8 +739,11 @@ public class ARMathShooterGame : MonoBehaviour
 
             UpdateScoreText();
 
+            // The enemy you shoot still drops down
             StartCoroutine(DropEnemyThenDestroy(enemy));
-            StartCoroutine(NextQuestionAfterDelay(0.8f));
+
+            // The remaining enemies fly into the robot one by one
+            StartCoroutine(MoveRemainingEnemiesIntoRobotOneByOneThenNextQuestion());
         }
         else
         {
@@ -749,6 +752,7 @@ public class ARMathShooterGame : MonoBehaviour
             if (instructionText != null)
                 instructionText.text = "Wrong! -1 second";
 
+            // Wrong enemy still drops down
             StartCoroutine(DropEnemyThenDestroy(enemy));
         }
     }
@@ -776,8 +780,68 @@ public class ARMathShooterGame : MonoBehaviour
             if (instructionText != null)
                 instructionText.text = "Time's up!";
 
-            StartCoroutine(NextQuestionAfterDelay(0.8f));
+            // When time ends, all remaining enemies fly into the robot one by one
+            StartCoroutine(MoveRemainingEnemiesIntoRobotOneByOneThenNextQuestion());
         }
+    }
+
+    private IEnumerator MoveRemainingEnemiesIntoRobotOneByOneThenNextQuestion()
+    {
+        yield return new WaitForSeconds(0.35f);
+
+        List<EnemyData> enemiesToMove = new List<EnemyData>(activeEnemies);
+        activeEnemies.Clear();
+
+        foreach (EnemyData enemy in enemiesToMove)
+        {
+            yield return StartCoroutine(MoveEnemyIntoRobotThenDestroy(enemy));
+            yield return new WaitForSeconds(0.12f);
+        }
+
+        yield return new WaitForSeconds(0.25f);
+
+        StartNextQuestion();
+    }
+
+    private IEnumerator MoveEnemyIntoRobotThenDestroy(EnemyData enemy)
+    {
+        if (enemy == null || enemy.obj == null || activeRobot == null)
+            yield break;
+
+        GameObject enemyObj = enemy.obj;
+        TextMeshPro label = enemy.label;
+
+        // Hide the number so it does not float outside the shrinking ball
+        if (label != null)
+            label.gameObject.SetActive(false);
+
+        Vector3 startPosition = enemyObj.transform.position;
+        Vector3 endPosition = activeRobot.transform.position + Vector3.up * 0.2f;
+
+        Vector3 startScale = enemyObj.transform.localScale;
+
+        float duration = 0.35f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            if (enemyObj == null)
+                yield break;
+
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+
+            enemyObj.transform.position = Vector3.Lerp(startPosition, endPosition, t);
+            enemyObj.transform.localScale = Vector3.Lerp(startScale, Vector3.zero, t);
+
+            yield return null;
+        }
+
+        if (enemyObj != null)
+            Destroy(enemyObj);
+
+        if (label != null)
+            Destroy(label.gameObject);
     }
 
     private void CreateTimerRing()
@@ -794,7 +858,7 @@ public class ARMathShooterGame : MonoBehaviour
         timerRing = ringObj.AddComponent<LineRenderer>();
         timerRing.useWorldSpace = true;
         timerRing.loop = false;
-        timerRing.widthMultiplier = 0.04f;
+        timerRing.widthMultiplier = 0.055f;
         timerRing.positionCount = 64;
         timerRing.material = new Material(Shader.Find("Sprites/Default"));
     }
@@ -821,7 +885,7 @@ public class ARMathShooterGame : MonoBehaviour
         timerRing.endColor = ringColor;
 
         Vector3 center = activeRobot.transform.position + Vector3.up * 0.03f;
-        float radius = 0.38f;
+        float radius = 0.52f;
 
         for (int i = 0; i < segments; i++)
         {
@@ -882,8 +946,8 @@ public class ARMathShooterGame : MonoBehaviour
         if (robotQuestionText == null || arCamera == null || activeRobot == null)
             return;
 
-        Vector3 textPosition = activeRobot.transform.position + Vector3.up * 0.48f;
-        Vector3 bgPosition = activeRobot.transform.position + Vector3.up * 0.47f;
+        Vector3 textPosition = activeRobot.transform.position + Vector3.up * 0.58f;
+        Vector3 bgPosition = activeRobot.transform.position + Vector3.up * 0.57f;
 
         robotQuestionText.transform.position = textPosition;
         robotQuestionText.transform.LookAt(arCamera.transform);
@@ -892,7 +956,7 @@ public class ARMathShooterGame : MonoBehaviour
         if (questionBackgroundObj != null)
         {
             questionBackgroundObj.transform.position = bgPosition;
-            questionBackgroundObj.transform.localScale = new Vector3(0.65f, 0.20f, 1f);
+            questionBackgroundObj.transform.localScale = new Vector3(0.70f, 0.22f, 1f);
             questionBackgroundObj.transform.LookAt(arCamera.transform);
             questionBackgroundObj.transform.Rotate(0f, 180f, 0f);
         }
